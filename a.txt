@@ -1,1 +1,9 @@
-test
+git config --global user.name ""
+git config --global user.email ""
+ssh-keygen -C 'you email address@gmail.com' -t rsa
+使用ssh -T git@git.oschina.net命令来测试连接是否畅通
+git init
+git add .
+git commit -m ""
+git remote add origin https://git.oschina.net/你的用户名/项目名.git
+git push -u origin master
