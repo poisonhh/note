@@ -7,3 +7,7 @@ git add .
 git commit -m ""
 git remote add origin https://git.oschina.net/你的用户名/项目名.git
 git push -u origin master
+sudo apt-get remove --purge openssh-server
+sudo apt-get install openssh-server
+sudo vi /etc/ssh/sshd_config
+将PermitRootLogin prohibit-password 后的参数 改为 PermitRootLogin yes
