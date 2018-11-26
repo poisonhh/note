@@ -1,0 +1,57 @@
+mysql
+ dpkg --list|grep mysql
+ sudo apt-get remove mysql-*
+ dpkg -l |grep ^rc|awk '{print $2}' |sudo xargs dpkg -P
+ 安装
+ sudo apt-get install mysql-server
+ sudo apt install mysql-client
+ 检查状态
+ sudo netstat -tap | grep mysql
+ # 修改配置文件，注释掉bind-address = 127.0.0.1
+$ sudo vi /etc/mysql/mysql.conf.d/mysqld.cnf
+grant all on *.* to root@'%' identified by '123456' with grant option;
+flush privileges;
+
+sudo vim  /etc/mysql/mysql.conf.d/mysqld.cnf
+[mysqld] 下面添加
+lower_case_table_names=1
+mysql 服务重启
+sudo /etc/init.d/mysql restart
+
+xshell 
+ 文件传输 
+  接收 rz
+  发送 sz
+
+
+redis
+redis-server /redis.conf
+redis-cli 
+
+
+zookeeper
+首先修改把配置文件名字更改为 zoo.cfg
+然后设置 dataDir
+sh zkServer.sh start
+sh zkServer.sh status
+sh zkServer.sh stop
+sh zkServer.sh restart
+
+sh zkCli.sh -server
+
+ubuntu 18 set static ip
+ filepath  /etc/netplan/*.yaml
+ network:
+    ethernets:
+        enp0s3:
+            addresses: [192.168.1.2/24]
+            gateway4: 192.168.1.1
+            nameservers:
+              addresses: [8.8.8.8,8.8.4.4]
+            dhcp4: no
+    version: 2
+
+sudo netplan apply
+/etc/network/interfaces
+/etc/systemd/resolved.conf
+service network-manager restart  
