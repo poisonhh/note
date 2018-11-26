@@ -1,3 +1,9 @@
+# ubuntu shell  dash to bash
+sudo dpkg-reconfigure dash 否是 bash 是是 dash
+ls -l /bin/sh
+ln -sf bash /bin/sh
+ls -l /bin/sh
+
 mysql
  dpkg --list|grep mysql
  sudo apt-get remove mysql-*
@@ -38,20 +44,38 @@ sh zkServer.sh stop
 sh zkServer.sh restart
 
 sh zkCli.sh -server
-
+启用网卡 ifconfig enp0s8 up
+设置静态IP的时候要和本地主机的网段相同
 ubuntu 18 set static ip
  filepath  /etc/netplan/*.yaml
  network:
     ethernets:
+	enpOs8:
+            dhcp4: true
+	    addresses: []
         enp0s3:
             addresses: [192.168.1.2/24]
-            gateway4: 192.168.1.1
             nameservers:
               addresses: [8.8.8.8,8.8.4.4]
             dhcp4: no
     version: 2
+ renderer: networkd
 
 sudo netplan apply
 /etc/network/interfaces
 /etc/systemd/resolved.conf
-service network-manager restart  
+service network-manager restart
+sudo vim /etc/network/interfaces
+auto lo
+iface lo inet loopback
+
+auto enp0s3
+iface enp0s3 inet static
+address 192.168.1.2
+network 192.168.1.1
+netmask 255.255.255.0
+dns-nameservers 8.8.8.8 8.8.4.4
+
+auto enp0s8
+iface enp0s8 inet dhcp
+  
