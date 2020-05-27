@@ -103,6 +103,8 @@ https://www.cnblogs.com/jiangwangxiang/p/8481661.html
 关闭
 1 cmd nginx -s stop 或者 nginx -s quit
 2 taskkill /f /t /im nginx.exe
+
+test git
  
 
 
