@@ -121,11 +121,39 @@ HotSpot算法实现
 	6 CMS(Concurrent Mark Sweep)收集器
 		以获取最短回收停顿时间为目的的收集器。采用标记-清除算法实现。
 		运作过程：
-			1 初始标记(CMS initial mark)
-			2 并发标记(CMS concurrent mark)
-			3 重新标记(CMS remark)
+			1 初始标记(CMS initial mark)：标记GC Roots能直接关联到的对象，速度很快。
+			2 并发标记(CMS concurrent mark)：GC RootsTracing
+			3 重新标记(CMS remark)：修正并发标记期间因用户程序继续运行而导致标记产生变动的那一部分对象的标记记录(初始<停顿时间<并发)
 			4 并发清除(CMS concurrent sweep)
-		
+		初始标记、重新标记两个阶段需要"Stop The World"
+		并发标记、并发清除耗时最长，但都可以与用户线程一起工作
+		缺点：
+			1 对CPU资源非常敏感
+			2 无法处理浮动垃圾(Floating Garbage)
+				-XX:CMSInitiatingOccupancyFraction 设置百分比来触发垃圾回收，值太高容易造成"Concurrent Mode Failure"，性能降低
+			3 造成大量的空间碎片(标记-清除算法)
+				-XX:+UseCMSCompactAtFullCollection : 用于在CMS收集器顶不住要进行FullGC时开启内存碎片的合并整理过程，内存整理的
+				过程是无法并发的，空间碎片问题没有了，但是停顿时间变长了。
+				-XX:CMSFullGCsBeforeCompaction：这个参数是用于设置执行多少次不压缩的Full GC后，跟着来一次带压缩的(默认值为0，表示
+				每次进入Full GC时都进行碎片整理)
+			4 G1收集器
+				1 并行与并发
+				2 分代收集
+				3 空间整合：整体上看是基于"标记-整理"算法实现，局部(两个Region之间)基于复制算法实现，长时间运行不会产生空间碎片。
+				4 可预测的停顿：让使用者明确指定在一个长度为M毫秒的时间片段内，消耗在垃圾收集上的时间不得超过N毫秒，实时垃圾收集的特征。
+				它将整个Java堆划分为多个大小相等的独立区域(Region)，虽然还保留有新生代和老年代的概念，但新生代和老年代不再是物理
+				隔离的了，它们都是一部分Region(不需要连续)的集合。
+				之所以能建立可预测的停顿时间模型，是因为它可以有计划地避免在整个Java堆中进行全区域的垃圾收集。G1跟踪各个Region里面
+				的垃圾堆积的价值大小(回收所获得的空间大小以及回收所需时间的经验值)，在后台维护一个优先列表，每次根据允许的收集时间，
+				优先回收价值最大的Region(这也就是Garbage-First名称的来由)，这种使用Region划分内存空间以及有优先级的区域回收方式，保证
+				了G1收集器在有限的时间内可以获取尽可能高的收集效率。
+				Remembered Set ：避免全堆扫描
+				运作过程：
+					1 初始标记(Initial Marking)
+					2 并发标记(Concurrent Marking)
+					3 最终标记(Final Marking)
+					4 筛选回收(Live Data Counting and Evacuation)
+				
 		
 		
 Java类的加载
