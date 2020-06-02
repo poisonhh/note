@@ -91,7 +91,7 @@ aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee（即包含32个16进制数字，以连字�
 
 核心思想：将数据库进行水平拆分，每个数据库设置不同的初始值和相同的自增步长。
 
-![数据库水平拆分](D:\hhuang\project\note\数据库水平拆分.png)
+![数据库水平拆分](./pic/数据库水平拆分.png)
 
 ​											数据库水平拆分
 
