@@ -30,9 +30,284 @@ MySQL查询缓存保存查询返回的完整结果。当查询命中该缓存，
 
 ### 前置索引
 
+<https://www.jianshu.com/p/85a18c1e7d41>
+
 ### 回表查询
 
+#### 什么是回表查询？
+
+InnoDB有两大类索引：
+
+- 聚集索引（clustered index）
+- 普通索引（secondary index）
+
+InnoDB聚集索引和普通索引的差异
+
+InnoDB聚集索引的叶子节点存储行记录，因此，InnoDB必须要有，且只有一个聚集索引：
+
+1. 如果表定义了PK，则PK就是聚集索引
+2. 如果表没有定义PK，则第一个not NULL unique列是聚集索引
+3. 否则，InnoDB会创建一个隐藏的row-id作为聚集索引
+
+所以PK查询非常快，直接定位记录
+
+InnoDB普通索引的叶子节点存储主键值。
+
+注意：不是存储行记录头指针，MyISAM的索引叶子节点存储记录指针。
+
+　*t(id PK, name KEY, sex, flag);*
+
+*画外音：id是聚集索引，name是普通索引。*
+
+表中有四条记录：
+
+　　*1, shenjian, m, A*
+
+　　*3, zhangsan, m, A*
+
+　　*5, lisi, m, A*
+
+　　*9, wangwu, f, B*
+
+两个B+树索引分别如上图：
+
+1. id为PK，聚集索引，叶子节点存储行记录；
+2. name为KEY，普通索引，叶子节点存储PK值，即id；
+
+既然从普通索引无法直接定位行记录，那**普通索引的查询过程是怎么样的呢？**
+
+通常情况下，需要扫码两遍索引树。
+
+例如：
+
+```java
+select * from t where name='lisi';　
+```
+
+**是如何执行的呢？**
+
+如**粉红色**路径，需要扫码两遍索引树：
+
+1. 先通过普通索引定位到主键值id=5；
+2. 在通过聚集索引定位到行记录；
+
+这就是所谓的**回表查询**，先定位主键值，再定位行记录，它的性能较扫一遍索引树更低。
+
+#### 什么是索引覆盖（Covering index）?
+
+MySQL官网，类似的说法出现在explain查询计划优化章节，即explain的输出结果Extra字段为**Using index**时，能够触发索引覆盖。
+
+不管是SQL-Server官网，还是MySQL官网，都表达了：只需要在一棵索引树上就能获取SQL所需的所有列数据，无需回表，速度更快。
+
+#### 如何实现索引覆盖？
+
+常见的方法是：将被查询的字段，建立到联合索引里去。
+
+```java
+create table user (
+    id int primary key,
+    name varchar(20),
+    sex varchar(5),
+    index(name)
+)engine=innodb;
+```
+
+第一个SQL语句：
+
+```java
+select id,name from user where name='shenjian';　
+```
+
+能够命中name索引，索引叶子节点存储了主键id，通过name的索引树即可获取id和name，无需回表，符合索引覆盖，效率较高。
+
+*画外音，Extra：**Using index**。*
+
+第二个SQL语句：
+
+```java
+select id,name,sex from user where name='shenjian';
+```
+
+能够命中name索引，索引叶子节点存储了主键id，但sex字段必须回表查询才能获取到，不符合索引覆盖，需要再次通过id值扫码聚集索引获取sex字段，效率会降低。
+
+*画外音，Extra：**Using index condition**。*
+
+如果把(name)单列索引升级为联合索引(name, sex)就不同了。
+
+```java
+create table user (
+    id int primary key,
+    name varchar(20),
+    sex varchar(5),
+    index(name, sex)
+)engine=innodb;
+```
+
+可以看到：
+
+```java
+select id,name ... where name='shenjian';
+ 
+select id,name,sex ... where name='shenjian';
+```
+
+都能够命中索引覆盖，无需回表。
+
+*画外音，Extra：**Using index**。*
+
+#### 哪些场景可以利用索引覆盖来优化SQL?
+
+1. 场景1：全表count查询优化
+
+   原表为：
+
+   *user(PK id, name, sex)；*
+
+   直接：
+
+   ```java
+   select count(name) from user;
+   ```
+
+   不能利用索引覆盖。
+
+   添加索引：
+
+   ```java
+   alter table user add key(name);
+   ```
+
+   就能够利用索引覆盖提效。
+
+2. 场景2：列查询优化
+
+   ```java
+   select id,name,sex ... where name='shenjian';
+   ```
+
+   这个例子不再赘述，将单列索引(name)升级为联合索引(name, sex)，即可避免回表。
+
+3. 场景3：分页查询
+
+   ```java
+   select id,name,sex ... order by name limit 500,100;
+   ```
+
+   将单列索引(name)升级为联合索引(name, sex)，也可以避免回表。
+
 ### 内存表VS临时表
+
+#### 内存表
+
+##### 简介
+
+内存表的表结构建立在磁盘里面，数据放在内存里面，当mysql重启之后，内存表的数据会丢失，表结构依旧存在会执行一次truncate操作
+
+##### 内存表的建立
+
+```java
+CREATE TABLE tmp_memory (i INT) ENGINE = MEMORY;
+```
+
+##### 查看表结构：
+
+```java
+show tables;
+show table status;
+```
+
+这两个命令无法查看临时表。 但是可以查内存表
+
+##### 使用场景及注意事项
+
+内存表使用hash索引把数据保存在内存中，具有更快的速度，可以用来缓存。
+
+- 内存表对所有的用户连接都是可用的。这就意味着，多个会话连接的内存表名字不能重复，具有唯一性
+- 内存表如果复制数据进去的话，所有的原有格式都不会存在，需要重新设置
+- 重启造成数据丢失，可以drop表之后重新复制数据等。这是最傻瓜的方法了。
+- 支持简单的操作符>=<这三个，我认为内存表用来缓存的话，应该不会涉及很复杂的操作。
+- 不好的地方的话，应该在于数据了，因为数据都在内存里，处理起来应该蛮麻烦
+- 内存表的默认引擎是memory
+
+##### 特点
+
+1. *多个session，创建表的名字不能一样*
+2. *一个session创建会话后，对其他session也是可见的*
+3. *data目录下只有tmp_memory.frm ,表结构放在磁盘上，数据放在内存中*
+4. *mysql 重启或者关闭后内存表里的数据会丢失，但是表结构仍然存在*
+5. *可以创建索引,删除索引,支持唯一索引*
+6. *不影响主备，主库上插入的数据，备库也可以查到*
+7. *show tables 看得到表*
+
+#### 临时表
+
+##### 简介
+
+临时表是建立在系统临时文件夹中的表。临时表的数据和表结构都存储在内存之中，退出的时候所占的空间会被释放。
+
+##### 创建临时表：
+
+```java
+CREATE TEMPORARY TABLE tmp_table( 
+name VARCHAR(10) NOT NULL, 
+value INT NOT NULL 
+);
+```
+
+关键字为 TEMPORARY
+
+可以查看表建立sql语句
+
+```java
+show create table tmp_table;
+```
+
+直接将查询结构导入临时表
+
+```java
+create temporary table tmp_table select * from table_name;
+```
+
+##### 设置临时表大小
+
+tmp_table_size 临时表的容量
+
+##### 使用场景及注意事项
+
+- 临时表只在当前连接可见，当这个连接关闭的时候，会自动drop。比如打开mysql 就是一个连接会话。两个不同的连接可以使用相同名字的临时表，两个表之间不存在什么关系，如果临时表的名字和已经存在的磁盘表名字一样，那么临时表会暂时覆盖磁盘表。就是说，你select 查询，只会显示临时表里面的，不会显示磁盘表
+- 临时表的存储引擎：Memory，MyISAM，Merge，InnoDB
+- 临时表不支持，mysql cluster
+- 同一个查询语句，只能用一次临时表，就是说不能将表和自己做连接等
+- 重命名表，不能用rename 可以用alter table代替
+- 如果超出了临时表的容量，临时表会转换成磁盘表
+
+##### 特点
+
+1. 创建的表的名字可以一样 
+2. 表结构和数据都放在内存中
+3. 会话消失表结构和数据都消失
+4. 可以创建索引,删除索引
+5. 主库创建的表，备库查不到
+6. show tables 看不到表
+
+#### 总结
+
+对比一下内存表和临时表的一些主要区别吧
+
+- 存储
+  - 内存表 表结构存储在磁盘中，数据存储在内存中
+  - 临时表 表结构和数据都存储在内存中
+- 会话
+  - 内存表 是可以多个会话共享的
+  - 临时表 是单个会话独享的，是会话级别的
+- 引擎
+  - 内存表默认，Memory
+  - 临时表默认，MyISAM（可以为任意存储引擎）
+- 断开连接
+  - 临时表 啥都不剩
+  - 内存表 只剩下表结构（data目录下 tableName.frm）
+- 性能
+  - 内存表由于所有的内容都是放在内存中，所以相对来说，速度较快但是同时数据的维护较为困难
 
 ### 数据类型间的区别
 
