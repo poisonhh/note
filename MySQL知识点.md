@@ -465,7 +465,7 @@ InnoDB handles SELECT COUNT(*) and SELECT COUNT(1) operations in the same way. T
 - MySQL在真正开始执行语句之前，并不能精确的知道满足这个条件的记录有多少条，而只能根据统计信息来估算记录数
 - 这个统计信息就是索引的“区分度”
   - 显然，一个索引上不同的值越多，这个索引的区分度就越好
-  - 而一个索引上不同的值的个数，我们称之为“”基数“(cardinality)
+  - 而一个索引上不同的值的个数，我们称之为“基数“(cardinality)
   - 也就是说，这个基数越大，索引的区分度越好
   - 可以使用show index方法，看到一个索引的基数
 - 在使用普通索引，因为都要回表到主键索引上查出整行数据，这个代价优化器也要算进去的
@@ -607,6 +607,10 @@ InnoDB handles SELECT COUNT(*) and SELECT COUNT(1) operations in the same way. T
 - **ROW**：记录对数据库做出的修改的语句所影响到的数据行以及这些行的修改，比如，update A set test = 'test'，如果使用row模式，那么这条update所影响到的行所对应的修改，将会记录在binlog中，使用row模式时，优点是能完还原和复制被日志记录时的操作，缺点是日志量较大，IO压力比较大，性能消耗比较大
 
 - **MIXED**：混合上述两种模式，一般使用statement方式进行记录，如果遇到一些特殊函数使用row方式进行记录，这种记录方式称为mixed
+
+#### 二进制日志进行数据库恢复
+
+
 
 ### redo log(重做日志)
 
