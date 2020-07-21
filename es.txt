@@ -1,0 +1,165 @@
+GET _cluster/health
+GET /_cat/health?v
+GET /_cat/indices?v
+put /test_index?pretty
+delete /test_index
+
+put /ecommerce/product/1
+{
+  "name": "gaolujie yagao",
+  "desc": "gaolujie meibai",
+  "price": 30,
+  "producer": "gaolujie producer",
+  "tags": ["meibai", "fangzhu"]
+}
+put /ecommerce/product/2
+{
+  "name": "jiajieshi yagao",
+  "desc": "youxiao fangzhu",
+  "price": 25,
+  "producer": "jiajieshi producer",
+  "tags": ["fangzhu"]
+}
+put /ecommerce/product/3
+{
+  "name": "zhonghua yagao",
+  "desc": "caoben zhiwu",
+  "price": 40,
+  "producer": "zhonghua producer",
+  "tags": ["qingxin"]
+}
+
+put /ecommerce/product/4
+{
+  "name": "special yagao",
+  "desc": "special meibai",
+  "price": 50,
+  "producer": "special yagao producer",
+  "tags": ["meibai"]
+}
+
+get /ecommerce/product/1
+
+put /ecommerce/product/1
+{
+  "name": "jiaqiangban gaolujie yagao",
+  "desc": "gaolujie meibai",
+  "price": 30,
+  "producer": "gaolujie producer",
+  "tags": ["meibai", "fangzhu"]
+}
+
+post /ecommerce/product/1/_update
+{
+  "doc": {
+    "name": "gaolujie yagao"
+  }
+}
+
+delete /ecommerce/product/1
+
+get /ecommerce/product/_search
+
+get /ecommerce/product/_search?q=name:yagao&sort=price:desc
+
+## DSL: Domain Specified Language
+
+get /ecommerce/product/_search
+{
+  "query": {
+    "match_all": {}
+  }
+}
+
+get /ecommerce/product/_search
+{
+  "query": {
+    "match": {
+      "name": "yagao"
+    }
+  },
+  "sort": [
+    {"price": "desc"}
+  ]
+}
+
+## 分页查询
+
+get /ecommerce/product/_search
+{
+  "query": {
+    "match_all": {}
+  },
+  "from": 1,
+  "size": 1
+}
+
+## 指定查询某些fields
+
+get /ecommerce/product/_search
+{
+  "query": {
+    "match_all": {}
+  },
+  "_source": ["name", "price"]
+}
+
+
+## query filter
+
+get /ecommerce/product/_search
+{
+  "query": {
+    "bool": {
+      "must": {
+        "match": {
+          "name": "yagao"
+        }
+      },
+      "filter": {
+        "range": {
+          "price": {
+            "gt": 25
+          }
+        }
+      }
+    }
+  }
+}
+
+## full-text search 全文检索
+
+get /ecommerce/product/_search
+{
+  "query": {
+    "match": {
+      "producer": "yagao producer"
+    }
+  }
+}
+
+## phrase search 短语搜索
+## 搜索的字段完全匹配
+get /ecommerce/product/_search
+{
+  "query": {
+    "match_phrase": {
+      "producer": "yagao producer"
+    }
+  }
+}
+
+## highlight search 高亮搜索结果
+get /ecommerce/product/_search
+{
+  "query": {
+    "match": {
+      "producer": "producer"
+    }
+  },
+  "highlight": {
+    "fields": {
+      "producer": {}
+    }
+  }
+}
