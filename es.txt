@@ -163,3 +163,157 @@ get /ecommerce/product/_search
     }
   }
 }
+
+## 计算每个tag下的商品数量
+
+put /ecommerce/_mapping
+{
+  "properties": {
+    "tags": {
+      "type": "text",
+      "fielddata": true
+    }
+  }
+}
+
+get /ecommerce/product/_search
+{
+  "aggs": {
+    "group_by_tags": {
+      "terms": {
+        "field": "tags"
+      }
+    }
+  }
+}
+
+## 对名称中包含yagao的商品，计算每个tag下的商品数量
+
+get /ecommerce/product/_search
+{
+  "size": 0,
+  "query": {
+    "match": {
+      "name": "yagao"
+    }
+  },
+  "aggs": {
+    "group_by_tags": {
+      "terms": {
+        "field": "tags"
+      } 
+    }
+  }
+}
+
+## 先分组，再算每组的平均值，计算每个tag下的商品的平均价格
+
+get /ecommerce/product/_search
+{
+  "size": 0,
+  "aggs": {
+    "group_by_tags": {
+      "terms": {
+        "field": "tags"
+      },
+      "aggs": {
+        "avg_price": {
+          "avg": {
+            "field": "price"
+          }
+        }
+      }
+    }
+  }
+}
+
+## 先分组，再算每组的平均值，计算每个tag下的商品的平均价格，再按照平均价格排序
+
+get /ecommerce/product/_search
+{
+  "size": 0,
+  "aggs": {
+    "group_by_tags": {
+      "terms": {
+        "field": "tags",
+        "order": {
+          "avg_price": "desc"
+        }
+      },
+      "aggs": {
+        "avg_price": {
+          "avg": {
+            "field": "price"
+          }
+        }
+      }
+    }
+  }
+}
+
+## 按照指定的价格范围区间进行分组，然后在每组内再按照tag进行分组，最后再计算每组的平均价格
+
+get /ecommerce/product/_search
+{
+  "size": 0,
+  "aggs": {
+    "group_by_price": {
+      "range": {
+        "field": "price",
+        "ranges": [
+          {
+            "from": 0,
+            "to": 20
+          },
+          {
+            "from": 20,
+            "to": 40
+          },
+          {
+            "from": 40,
+            "to": 60
+          }
+        ]
+      },
+      "aggs": {
+        "group_by_tags": {
+          "terms": {
+            "field": "tags",
+            "order": {
+              "avg_price": "asc"
+            }
+          },
+          "aggs": {
+            "avg_price": {
+              "avg": {
+                "field": "price"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+PUT /test_index/test_type/1
+{
+  "test_field1": "test field1",
+  "test_field2": "test field2"
+}
+
+GET /test_index/test_type/1
+
+GET /test_index/test_type/1?_source=test_field1,test_field2
+
+PUT /test_index/test_type/4?op_type=create
+{
+  "test_field": "test test112221"
+}
+
+PUT /test_index/test_type/4/_create
+{
+  "test_field": "test test112221"
+}
+
+DELETE /test_index/test_type/4
