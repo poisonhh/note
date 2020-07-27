@@ -363,6 +363,59 @@ query
 				}
 			}
 		}
+	5. term
+		{
+		  "query": {
+			"term": {
+			  "productName": {
+				"value": "iphone"
+			  }
+			}
+		  }
+		}
+	6. terms
+		{
+		  "query": {
+			"terms": {
+			  "productName": [
+				"black",
+				"white"
+			  ]
+			}
+		  }
+		}
+		
+		GET /ecommerce/_search
+{
+  "query": {
+    "bool": {
+      "must_not": [
+        {
+          "match": {
+            "productName": "ios"
+          }
+        }
+      ],
+      "should": [
+        {
+          "match": {
+            "productName": "android"
+          }
+        }
+      ], 
+      "filter": [
+        {
+          "range": {
+            "unitPrice": {
+              "gte": 2000,
+              "lte": 7999
+            }
+          }
+        }
+      ]
+    }
+  }
+}
 sort 排序
 	"sort": {
 		"fieldName": {
@@ -387,5 +440,30 @@ _source 需要返回的文档fields
   "size": 100
 }
 
+更新文档
 
+POST /ecommerce/product/2/_update
+{
+  "doc": {
+    "productName": "Xiao Mi 10 Pro 256G black android 11"
+  }
+}
+
+使用脚本更新
+POST /ecommerce/product/2/_update
+{
+  "script": "ctx._source.unitPrice += 1"
+}
+
+Batch Processing(批处理)
+
+POST /ecommerce/product/_bulk
+{"index":{"_id":1}}
+{"shortName":"iPhone x","productExtId":"LCD12345","productName":"iPhone x white 64G ios 13","unitPrice":5999}
+
+POST /ecommerce/product/_bulk
+{"update":{"_id":1}}
+{"doc":{"shortName":"iPhone xs"}}
+{"update":{"_id":2}}
+{"doc":{"shortName":"Xiao Mi Note"}}
 
