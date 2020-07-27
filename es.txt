@@ -322,6 +322,8 @@ http://doc.codingdict.com/elasticsearch/16/
 _search
 GET /_index/_type/_search
 
+GET /sst.product/_doc/_search?q=brandName:LG
+
 query
 	1. match_all 匹配所有文档
 		"query": {
@@ -377,7 +379,13 @@ size 返回数据条数
 	"size": 100
 }
 _source 需要返回的文档fields
-
+{
+  "query": {
+    "match_all": {}
+  },
+  "_source": ["brandName", "fullName"],
+  "size": 100
+}
 
 
 
