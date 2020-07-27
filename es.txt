@@ -317,3 +317,67 @@ PUT /test_index/test_type/4/_create
 }
 
 DELETE /test_index/test_type/4
+
+http://doc.codingdict.com/elasticsearch/16/
+_search
+GET /_index/_type/_search
+
+query
+	1. match_all 匹配所有文档
+		"query": {
+			"match_all": {}
+		}
+	2. match
+		"query": {
+			"match": {
+				"fieldName": "test xxx"
+			}
+		}
+	3. match_phrase 包含短语 不分词
+		"query": {
+			"match_phrase": {
+				"fieldName": "test xxx"
+			}
+		}
+	4. bool
+		"query": {
+			"bool": {
+				"must": [
+					{ "match": { "fieldName" : "test xxx" } }
+				],
+				"must_not": [
+					{}
+				], 
+				"should": [
+					{}
+				], 
+				"filter": {
+					"range": {
+					  "unitPrice": {
+						"gte": 10,
+						"lte": 20
+					  }
+					}
+				}
+			}
+		}
+sort 排序
+	"sort": {
+		"fieldName": {
+			"order": "desc"
+		}
+	}
+from 分页
+size 返回数据条数
+{
+	"query": {
+		"match_all": {}
+	},
+	"from": 0,
+	"size": 100
+}
+_source 需要返回的文档fields
+
+
+
+
