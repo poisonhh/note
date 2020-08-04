@@ -176,3 +176,18 @@ docker ps -a #查看所有运行过的容器
 docker exec -it container_ID /bin/bash
 ```
 
+### Docker操作
+
+- 容器自启动设置
+
+```shell
+docker run --restart=always  # 设置每次docker服务重启后容器也自动重启
+docker update --restart=always <CONTAINER ID>  # 如果已经启动了则可以使用此命令
+```
+
+- 容器重启
+
+```shell
+docker restart imageid
+```
+
