@@ -467,3 +467,6 @@ POST /ecommerce/product/_bulk
 {"update":{"_id":2}}
 {"doc":{"shortName":"Xiao Mi Note"}}
 
+执行聚合
+
+
