@@ -1,4 +1,88 @@
-# Linux
+# Linux (Centos7)
+
+## 网络配置
+
+### ifconfig
+
+net-tools 安装
+
+```shell
+sudo yum install net-tools
+```
+
+### 常用命令
+
+1. ip addr/ifconfig
+2. systemctl restart/start/stop NetworkManager
+3. systemctl restart/start/stop network
+
+### 配置静态IP
+
+1. ifconfig 查看网卡设备名称
+2. 进入到默认文件路径
+
+```shell
+cd /etc/sysconfig/network-scripts/
+```
+
+3. 修改ifcfg-enp0s3 文件 
+
+```shell
+vi ifcfg-enp0s3
+```
+
+4. 文件内容修改
+
+   其中关键内容：
+
+   1. TYPE="Ethernet"     # 网络类型为以太网
+   2. BOOTPROTO="static"  # 配置成静态ip
+   3. NAME="eno16777736"  # 网卡设备名，设备名一定要跟文件名一致
+   4. DEVICE="eno16777736" # 网卡设备名，设备名一定要跟文件名一致
+   5. ONBOOT="yes"        # 该网卡是否随网络服务启动
+   6. IPADDR="192.168.1.103"  #主机ip地址
+   7. GATEWAY="192.168.1.1"   # 网关
+   8. NETMASK="255.255.255.0"   # 子网掩码
+   9. DNS1="218.85.152.99"    #DNS2也可以配置成8.8.8.8
+
+```shell
+BOOTPROTO=static
+ONBOOT=yes
+IPADDR=192.168.1.112
+NETMASK=255.255.255.0
+GATEWAY=192.168.1.1
+DNS=8.8.8.8
+```
+
+5. 重启网络
+
+```shell
+systemctl restart NetworkManager
+systemctl restart network
+```
+
+### 配置DNS域名服务器
+
+1. 添加DNS
+
+```shell
+vi /etc/resolv.conf #修改配置文件
+nameserver 8.8.8.8
+```
+
+2. 重启网络环境
+
+```shell
+systemctl restart NetworkManager
+systemctl restart network
+```
+
+3. 解析百度地址
+
+```shell
+yum -y install bind-utils #nslookup
+nslookup baidu.com
+```
 
 ## Docker
 
