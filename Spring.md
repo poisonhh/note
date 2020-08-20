@@ -1,6 +1,6 @@
 # Spring
 
-## bean的作用域
+## Bean的作用域
 
 - singleton：单例模式，在整个Spring IOC容器中，使用singleton定义的bean只有一个实例
 - prototype：原先模式，每次通过容器的getBean方法获取prototype定义的bean时，都产生一个新的bean实例
@@ -10,6 +10,46 @@
 - request：对于每次HTTP请求，使用request定义的bean都将产生一个新实例，即每次HTTP请求将会产生不用的bean实例
 - session：同一个session共享一个bean实例
 - global-session：同session作用域不同的是，所有的session共享一个bean实例
+
+## Bean的完整生命周期
+
+### Bean的生命周期
+
+- Spring启动，查找并加载需要被Spring管理的bean，进行Bean的实例化
+- Bean实例化后对将Bean的引入和值注入到Bean的属性中
+- 如果Bean实现了BeanNameAware接口的话，Spring将Bean的Id传递给setBeanName()方法
+- 如果Bean实现了BeanFactoryAware接口的话，Spring将调用setBeanFactory()方法，将BeanFactory容器实例传入
+- 如果Bean实现了ApplicationContextAware接口的话，Spring将调用Bean的setApplicationContext()方法，将Bean所在应用上下文引用传入进来
+- 如果Bean实现了BeanPostProcessor接口，Spring就将调用他们的postProcessBeforeInitialization()方法
+- 如果Bean实现了InitializingBean接口，Spring就将调用他们的afterPropertiesSet()方法。类似的，如果bean使用init-method声明了初始化方法，该方法也会被调用
+- 如果Bean实现了BeanPostProcessor接口，Spring就将调用他们的postProcessAfterInitialization()方法
+- 此时，Bean已经准备就绪，可以被应用程序使用了，他们将一直驻留在应用上下文中，知道应用上下文被销毁
+- 如果Bean实现了DisposableBean接口，Spring将调用它的destory()接口方法，同样，如果bean使用了destory-method声明销毁方法，该方法也会被调用
+
+### Bean完整的生命周期
+
+————————————初始化————————————
+
+- BeanNameAware.setBeanName() 在创建此bean的bean工厂中设置bean的名称，在普通属性设置之后调用，在InitializinngBean.afterPropertiesSet()方法之前调用
+- `BeanClassLoaderAware.setBeanClassLoader()`: 在普通属性设置之后，InitializingBean.afterPropertiesSet()之前调用
+- BeanFactoryAware.setBeanFactory() : 回调提供了自己的bean实例工厂，在普通属性设置之后，在InitializingBean.afterPropertiesSet()或者自定义初始化方法之前调用
+- `EnvironmentAware.setEnvironment()`: 设置environment在组件使用时调用
+- `EmbeddedValueResolverAware.setEmbeddedValueResolver()`: 设置StringValueResolver 用来解决嵌入式的值域问题
+- `ResourceLoaderAware.setResourceLoader()`: 在普通bean对象之后调用，在afterPropertiesSet 或者自定义的init-method 之前调用，在 ApplicationContextAware 之前调用。
+- `ApplicationEventPublisherAware.setApplicationEventPublisher()`: 在普通bean属性之后调用，在初始化调用afterPropertiesSet 或者自定义初始化方法之前调用。在 ApplicationContextAware 之前调用。
+- `MessageSourceAware.setMessageSource()`: 在普通bean属性之后调用，在初始化调用afterPropertiesSet 或者自定义初始化方法之前调用，在 ApplicationContextAware 之前调用。
+- ApplicationContextAware.setApplicationContext(): 在普通Bean对象生成之后调用，在InitializingBean.afterPropertiesSet之前调用或者用户自定义初始化方法之前。在ResourceLoaderAware.setResourceLoader，ApplicationEventPublisherAware.setApplicationEventPublisher，MessageSourceAware之后调用。
+- `ServletContextAware.setServletContext()`: 运行时设置ServletContext，在普通bean初始化后调用，在InitializingBean.afterPropertiesSet之前调用，在 ApplicationContextAware 之后调用**注：是在WebApplicationContext 运行时**
+- BeanPostProcessor.postProcessBeforeInitialization() : 将此BeanPostProcessor 应用于给定的新bean实例 在任何bean初始化回调方法(像是InitializingBean.afterPropertiesSet或者自定义的初始化方法）之前调用。这个bean将要准备填充属性的值。返回的bean示例可能被普通对象包装，默认实现返回是一个bean。
+- BeanPostProcessor.postProcessAfterInitialization() : 将此BeanPostProcessor 应用于给定的新bean实例 在任何bean初始化回调方法(像是InitializingBean.afterPropertiesSet或者自定义的初始化方法)之后调用。这个bean将要准备填充属性的值。返回的bean示例可能被普通对象包装
+- InitializingBean.afterPropertiesSet(): 被BeanFactory在设置所有bean属性之后调用(并且满足BeanFactory 和 ApplicationContextAware)。
+
+————————————销毁————————————
+
+在BeanFactory 关闭的时候，Bean的生命周期会调用如下方法:
+
+- `DestructionAwareBeanPostProcessor.postProcessBeforeDestruction()`: 在销毁之前将此BeanPostProcessor 应用于给定的bean实例。能够调用自定义回调，像是DisposableBean 的销毁和自定义销毁方法，这个回调仅仅适用于工厂中的单例bean(包括内部bean)
+- 实现了自定义的destory()方法
 
 ## Spring-bean的循环依赖以及解决方式
 
@@ -31,6 +71,19 @@ Spring中循环依赖场景有：
 ### 2. 怎么检测是否存在循环依赖
 
 检测循环依赖相对比较容易，Bean在创建的时候可以给该Bean打标，如果递归调用回来发现正在创建中的话，即说明了循环依赖了。
+
+### 3. 三种循环依赖
+
+- 构造器的循环依赖(Spring 无法解决)
+
+ Spring容器会将每一个正在创建的Bean 标识符放在一个“当前创建Bean池”中，Bean标识符在创建过程中将一直保持在这个池中，因此如果在创建Bean过程中发现自己已经在“当前创建Bean池”里时将抛出BeanCurrentlyInCreationException异常表示循环依赖；而对于创建完毕的Bean将从“当前创建Bean池”中清除掉。
+
+　　Spring容器先创建单例A，A依赖B，然后将A放在“当前创建Bean池”中，此时创建B,B依赖C ,然后将B放在“当前创建Bean池”中,此时创建C，C又依赖A， 但是，此时A已经在池中，所以会报错，因为在池中的Bean都是未初始化完的，所以会依赖错误 ，（初始化完的Bean会从池中移除）
+
+- setter方式单例，默认方式
+- setter方式原型，prototype
+
+对于“prototype”作用域Bean，Spring容器无法完成依赖注入，因为“prototype”作用域的Bean，Spring容器不进行缓存，因此无法提前暴露一个创建中的Bean。
 
 ### 3. Spring怎么解决循环依赖
 
@@ -133,3 +186,9 @@ protected void addSingletonFactory(String beanName, ObjectFactory<?> singletonFa
 ### 总结
 
 Spring通过三级缓存加上“提前曝光”机制，配合Java的对象引用原理，比较完美地解决了某些情况下的循环依赖问题！
+
+不要使用基于构造函数的依赖注入，可以通过以下方式解决：
+
+- 在字段上使用@Autowired注解，让Spring决定在合适的时机注入
+
+- 用基于setter方法的依赖注入。
